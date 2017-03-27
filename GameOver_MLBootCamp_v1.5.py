@@ -14,10 +14,7 @@ from sklearn import preprocessing
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 
-import keras
 
-
-# from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.model_selection import KFold, StratifiedKFold
 import xgboost as xgb
 from sklearn.metrics import log_loss
@@ -25,7 +22,6 @@ from xgboost.sklearn import XGBClassifier
 from sklearn.learning_curve import validation_curve
 from sklearn.grid_search import GridSearchCV, RandomizedSearchCV
 from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
-from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import cross_val_score
 
 
@@ -60,25 +56,9 @@ del X_train_cl['totalScore']
 del X_train_cl['totalBonusScore']
 
 # xtrain, xtest,ytrain, ytest = train_test_split(X_train_cl,y_train_cl,test_size = 0.3,random_state = 13) 
-X_tr = np.array(X_train_cl)
-y_tr= np.array(y_train_cl)
-
-X_train_cl.values
-
-   kf = StratifiedKFold(n_splits=5, shuffle=True,random_state=13)
-
- for train_index, test_index in kf.split(X_train_cl,y_train_cl.IS_IT_GAMER):
-     xtrain, xtest = X_train_cl.iloc[train_index], X_train_cl.iloc[test_index]
-     ytrain, ytest = y_train_cl.iloc[train_index], y_train_cl.iloc[test_index]
-print (xtrain, xtest)
 
 
-X_train_cl.reset_index(drop=True)
-y_train_cl.reset_index(drop=True)
-xtest.shape
-
-X_train_clear = X_train_cl.values
-y_train_clear = y_train_cl.values
+### HyperOpt Optimization ###
 
 def objective(space):
     
@@ -316,112 +296,7 @@ result
 pred[:,1]
 gbm_model.get_params
 
-
-### Neural Nets (KERAS library) ###
-
-from keras.models import Sequential
-from keras.layers.core import Dense
-
-model = Sequential()
-model.add(Dense(16,input_dim=11,init='uniform', activation='relu'))
-model.add(Dense(16, init='uniform', activation='relu'))
-model.add(Dense(64, init='uniform', activation='relu'))
-model.add(Dense(128, init='uniform', activation='relu'))
-model.add(Dense(256, init='uniform', activation='relu'))
-model.add(Dense(512,init='uniform', activation = 'relu'))
-model.add(Dense(512,init='uniform', activation = 'relu'))
-model.add(Dense(512,init='uniform', activation = 'relu'))
-model.add(Dense(64, init='uniform', activation='relu'))
-model.add(Dense(16,init='uniform', activation = 'relu'))
-model.add(Dense(16,init='uniform', activation = 'relu'))
-# model.add(Dense(32,init='uniform', activation = 'relu'))
-# model.add(Dense(16,init='uniform', activation = 'relu'))
-model.add(Dense(1, init='uniform', activation='sigmoid'))
-
-# Compile model
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-xtrain = X_train_cl.as_matrix()
-ytrain = y_train_cl.as_matrix()
-
-# Fit the model
-model.fit(xtrain, ytrain, nb_epoch=20, batch_size=10)
-
-scores = model.evaluate(xtrain,ytrain)
-
-print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-print("%s: %.2f%%" % (model.metrics_names[0], scores[0]))
-
-
-numfolds = 5
-kf2 = StratifiedKFold(n_splits= numfolds,shuffle=True,random_state = 13)
-
-total = 0   
-   
-for train_index,test_index in kf2.split(X_train_cl,y_train_cl.IS_IT_GAMER):
- 
-    xtrain,xtest = X_train_cl.iloc[train_index], X_train_cl.iloc[test_index]
-    ytrain, ytest = y_train_cl.iloc[train_index], y_train_cl.iloc[test_index]
-    
-    eval_set = [(xtrain, ytrain),(xtest, ytest)]
-#    rf_model.fit(xtrain,ytrain)
-    nnet_model.fit(xtrain, ytrain, nb_epoch=150,batch_size=10)
-
-    pred = nnet_model.predict_proba(xtest)  
-    pred = pred[:,1]
-    logloss = log_loss(ytest,pred)
-    print (logloss)
-    
-    total += logloss
-    
-result = total/numfolds 
- 
-print ("Logloss of model is: ", result) 
-
-
 #############################################################################################
-
-###### ExtraTreesClassifier ########### DIDN'T GET better result
-
-numfolds =10
-kf = StratifiedKFold(n_splits = numfolds, shuffle = True, random_state = 13)
-
-# etree_model = ExtraTreesClassifier(n_estimators = 31, max_depth = 26, min_impurity_split = 0.0306621954906843,
-#                                   criterion = "gini", max_features = 4, random_state = 13, n_jobs = -1)
-
-mlp_model = MLPClassifier(hidden_layer_sizes=(30,30,30),activation = 'logistic',solver='lbfgs',
-                          learning_rate_init=0.05,max_iter=100,random_state = 13)
-
-scores = cross_val_score(mlp_model,X_train_cl,y_train_cl.IS_IT_GAMER,scoring="neg_log_loss",cv = kf)
-scores.mean(), scores.std()
-
-total = 0   
-   
-for train_index,test_index in kf.split(X_train_cl,y_train_cl.IS_IT_GAMER):
- 
-    xtrain,xtest = X_train_cl.iloc[train_index], X_train_cl.iloc[test_index]
-    ytrain, ytest = y_train_cl.iloc[train_index], y_train_cl.iloc[test_index]
-    
-#    eval_set = [(xtrain, ytrain),(xtest, ytest)]
-#    rf_model.fit(xtrain,ytrain)
-    mlp_model.fit(xtrain, ytrain.values.ravel())
-
-    pred = mlp_model.predict_proba(xtest)  
-    pred = pred[:,1]
-    logloss = log_loss(ytest,pred)
-    print (logloss)
-#    print ('{:f}'.format(logloss.std()))
-    #  score = cross_val_score(rf2_model,xtest,ytest, cv = kf)
- #   print (score.mean, score.std)
-    total += logloss
-    
-result = total/numfolds 
- 
-print ("Logloss of model is: ", result) 
-
-
-
-
 
 ###   RandomForestClassifier ### DIDN'T GET BETTER LOG LOSS
 
@@ -440,12 +315,7 @@ scores.mean(), scores.std()
 
  rf3_model = RandomForestClassifier(n_estimators = 180, min_impurity_split = 0.07398323057139528, max_features = 8,
                                     max_depth = 28, criterion = "gini",random_state=13,n_jobs = -1)
-# n_Est= 40
- # gbm_model = GradientBoostingClassifier(n_estimators = 5000,max_depth = 2,learning_rate=0.002)
-# etree_model = ExtraTreesClassifier(n_estimators = 800, max_depth = 15,min_samples_leaf = 5,min_samples_split = 2)
-# nn_model = MLPClassifier(hidden_layer_sizes = (30))
-# xgb_model = xgb.XGBClassifier(n_estimators=5000,max_depth=3, learning_rate=0.007,
-#                              min_child_weight=5, subsample=0.8013942737365293)
+
 total = 0   
    
 for train_index,test_index in kf.split(X_train_cl,y_train_cl.IS_IT_GAMER):
@@ -471,103 +341,6 @@ result = total/numfolds
 print ("Logloss of model is: ", result) 
 
 
-# 0.3822 - numfolds = 5
-# 0.3804 - numfolds = 20
-
-result
-
-pred[:,1]
-gbm_model.get_params
-rf_model.get_params
-####### Neural Networks ###########
-
-
-
-
-#############
-xgb2 = xgb.XGBClassifier(n_estimators=500,subsample=0.8445077903560418, max_depth =3,
-                         min_child_weight = 8, learning_rate = 0.015,nthread=-1)
-
-    eval_set  = [( xtrain, ytrain), ( xtest, ytest)]
-
-xgb2.fit(xtrain,ytrain,eval_set=eval_set,eval_metric="logloss",early_stopping_rounds = 30)
-
-xgb.cv()
-
-
-#### Grid Search ### 
- from sklearn.cross_validation import StratifiedKFold
-
-cv = StratifiedKFold(y_tr,n_folds=10, shuffle=True,random_state=13) # shuffle = True
-### ЁБАНЫЙ ПИЗДЕЦ !!!! ###
-y_tr = y_train_cl.as_matrix()
-y_tr.shape
-c, r = y_tr.shape
-y_tr = y_tr.reshape(c,)
-
-
-# ExtraTreesClassifier: n_est = 500, max_depth = 20, min_samples_lead = 6: 0.382595
-
-
-params_grid2 = {
-    'n_estimators':[40], #,3000,5000],    # 40  #80
-    'max_depth': [5], #,25,35,50],    # 5
-#    'min_samples_leaf': [4,5,6,7,8],
-     'min_impurity_split': [0.0500753443726884],
-     'max_features': [4],   # 4
-     'random_state': [13]
-#    'min_samples_split': [2]        
-                }
-
-params_etree = {
-            'n_estimators':[31], #,3000,5000],    # 40  #80
-            'max_depth': [26], #,25,35,50],    # 5
-        #    'min_samples_leaf': [4,5,6,7,8],
-            'min_impurity_split': [0.0306621954906843],
-            'criterion': ["gini"],
-            'max_features': [4],   # 4
-            'random_state': [13]               
-                }
-
-params_grid = {
-    'max_depth': [2],
-    'n_estimators': [5000],
-    'learning_rate': [0.003], # 0.3
-    'min_child_weight': [6],
-    'subsample': [ 0.8396633805360239]
-#    'gamma': 0.2,
-#    'reg_alpha': 4,
-#    'reg_lambda': 5
-}
-
-
-params_fixed = {
-                n_jobs = -1
-}
-
-bst_grid = GridSearchCV(
-   estimator= ExtraTreesClassifier(),
-    param_grid=params_etree,
-    n_jobs = -1,
-    cv=cv,
-    scoring='log_loss'
-)
-
-
-
-   for train_index, test_index in cv.split(X_train_cl,y_train_cl.IS_IT_GAMER):
-        xtrain, xtest = X_train_cl.iloc[train_index], X_train_cl.iloc[test_index]
-        ytrain, ytest = y_train_cl.iloc[train_index], y_train_cl.iloc[test_index]
-        
-  #      eval_set = [(xtrain, ytrain),(xtest, ytest)]
-                     
-        bst_grid.fit(X_train_cl,y_train_cl) 
-        
-bst_grid.grid_scores_ 
-
-bst_grid.best_score_
-bst_grid.best_params_
-
 
 ### Transform our Test data to submit predictions
 
@@ -581,24 +354,13 @@ del Y_test['totalScore']
 del Y_test['totalBonusScore']
 
 
+# Best Score was taken by XGBoost Model with KFold = 20
 
 ### Prediction of Test Data ###
 Pred_prob = xgb_model.predict_proba(Y_test)
-Pred_prob
-
-Pred_rf2_prob = rf2_model.predict_proba(Y_test)
-Pred_rf2 = np.delete(Pred_rf2_prob,0,1)
 
 Pred_xgb = np.delete(Pred_prob,0,1)
 Pred_prob.shape
 
 
-from scipy import stats as scistats
-import math
-math.sqrt(0.013764989517513001)
-
-Pred_final = np.mean( np.array([ Pred_xgb, Pred_rf2 ]), axis=0 )
-
-np.savetxt('submission1.0_v5.txt',Pred_final, '%.9f') 
-
-np.savetxt('submission1.0_v3.txt',Pred_rf2_final, '%.9f') 
+np.savetxt('submission1.0.txt',Pred_xgb, '%.9f') 
